@@ -1,0 +1,19 @@
+==============================================
+Starting Nivix Bridge Service at Sun May 18 03:09:38 IST 2025
+==============================================
+Nivix Bridge Service running on port 3003
+http://localhost:3003
+Attempting to connect to Hyperledger Fabric...
+Attempting to connect to Hyperledger Fabric...
+Found 2 running Hyperledger containers
+Testing chaincode connectivity with InitLedger query...
+Chaincode connection test error, but this might be expected: Command failed: /tmp/fabric-invoke.sh "Ping" '["test"]' "query"
+Running command in /tmp/fabric-helper/test-network
+Function: Ping
+Args: ["test"]
+Type: query
+Error: endorsement failure during query. response: status:500 message:"Function Ping not found in contract SmartContract" 
+
+Failed to connect to chaincode
+Failed to connect to Hyperledger Fabric - temporarily storing KYC data in memory
+Will try to reconnect to Hyperledger Fabric on each request

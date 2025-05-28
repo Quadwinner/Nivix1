@@ -1,0 +1,22 @@
+{
+  "name": "nivix-bridge-service",
+  "version": "1.0.0",
+  "description": "Bridge service to connect Nivix frontend with Hyperledger Fabric",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "enroll": "node src/enrollAdmin.js",
+    "mock": "MOCK_MODE=true node src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "fabric-ca-client": "^2.2.18",
+    "fabric-network": "^2.2.18",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+} 

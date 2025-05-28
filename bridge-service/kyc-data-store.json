@@ -1,0 +1,53 @@
+{
+  "PersistentAddress123": {
+    "userId": "persistent-test",
+    "solanaAddress": "PersistentAddress123",
+    "fullName": "Persistent Test User",
+    "countryCode": "US",
+    "idDocuments": [
+      "passport123"
+    ],
+    "verificationDate": "2025-05-18T19:54:18.996Z",
+    "riskScore": 50,
+    "lastUpdated": "2025-05-18T19:54:19.143Z"
+  },
+  "SecondAddress456": {
+    "userId": "second-test",
+    "solanaAddress": "SecondAddress456",
+    "fullName": "Second Test User",
+    "countryCode": "IN",
+    "idDocuments": [
+      "passport456"
+    ],
+    "verificationDate": "2025-05-18T19:54:41.211Z",
+    "riskScore": 50,
+    "lastUpdated": "2025-05-18T19:54:41.350Z"
+  },
+  "8VyJ4EgKeto2vhVzq2wgwD9GrFz1wcWnGHP97buwxZj2": {
+    "userId": "testuser1",
+    "solanaAddress": "8VyJ4EgKeto2vhVzq2wgwD9GrFz1wcWnGHP97buwxZj2",
+    "fullName": "Test User",
+    "countryCode": "US",
+    "idDocuments": [
+      "passport123"
+    ],
+    "verificationDate": "2025-05-24T17:18:45.434Z",
+    "riskScore": 50,
+    "lastUpdated": "2025-05-24T17:18:45.568Z"
+  },
+  "test_solana_address_123": {
+    "userId": "test_user_123",
+    "solanaAddress": "test_solana_address_123",
+    "fullName": "Test User",
+    "countryCode": "US",
+    "idDocuments": [
+      {
+        "type": "passport",
+        "number": "123456789"
+      }
+    ],
+    "verificationDate": "2025-05-22T11:14:31.673Z",
+    "riskScore": 50,
+    "lastUpdated": "2025-05-22T11:14:31.808Z"
+  }
+}
