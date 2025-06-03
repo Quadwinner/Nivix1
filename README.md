@@ -71,5 +71,66 @@ To verify that KYC data is being stored in Hyperledger Fabric:
 2. Run the KYC test script:
    ```bash
    ./nivix-project/hyperledger/test-all-kyc-functions.sh
-   ```
-3. Check the output to see if your data has been stored correctly # Nivix1
+   # Nivix Bridge Service
+
+A blockchain bridge service that connects Hyperledger Fabric and Solana networks, enabling cross-chain transactions and KYC verification.
+
+## Features
+
+- Cross-chain transaction processing between Hyperledger Fabric and Solana
+- KYC verification and compliance management
+- Solana wallet management and balance queries
+- Transaction history tracking
+- RESTful API for easy integration
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/nivix-bridge-service.git
+cd nivix-bridge-service
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Run the setup script:
+```bash
+./scripts/setup-bridge.sh
+```
+
+## Usage
+
+Start the bridge service:
+```bash
+npm start
+```
+
+To test the bridge functionality:
+```bash
+node test-bridge.js
+```
+
+## API Endpoints
+
+### Health Check
+- `GET /health` - Check service status
+
+### KYC Operations
+- `POST /api/kyc/submit` - Submit KYC data
+- `GET /api/kyc/status/:solanaAddress` - Check KYC status
+
+### Solana Operations
+- `GET /api/solana/balance/:address` - Get Solana wallet balance
+
+### Bridge Operations
+- `POST /api/bridge/initiate-transfer` - Initiate a cross-chain transaction
+- `GET /api/bridge/transaction-status/:id` - Check transaction status
+- `GET /api/bridge/wallet-transactions/:address` - Get transaction history for a wallet
+- `POST /api/bridge/sync-offline-transaction` - Sync an offline transaction
+
+## License
+
+MIT

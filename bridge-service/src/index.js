@@ -8,6 +8,11 @@ const { execPromise } = require('./exec-promise');
 const { storeKYCDirectly, getKYCStatusDirectly } = require('./direct-kyc');
 const { storeKYC, getKYC } = require('./file-storage');
 
+// Import the new Solana and bridge modules
+const solanaClient = require('./solana/solana-client');
+const anchorClient = require('./solana/anchor-client');
+const transactionBridge = require('./bridge/transaction-bridge');
+
 const app = express();
 const PORT = process.env.PORT || 3002;
 
@@ -46,7 +51,14 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     service: 'nivix-bridge-service',
-    mode: 'hyperledger' 
+    mode: 'hyperledger',
+    version: '1.1.0',
+    features: {
+      kyc: true,
+      solana: solanaClient.initialized,
+      hyperledger: true,
+      bridge: transactionBridge.initialized
+    }
   });
 });
 
@@ -281,6 +293,198 @@ app.get('/api/kyc/status/:solanaAddress', async (req, res) => {
       success: false,
       verified: false,
       message: `Failed to check KYC status: ${error.message}`
+    });
+  }
+});
+
+// Initialize the Solana client and transaction bridge
+(async () => {
+  try {
+    await solanaClient.initialize();
+    console.log('Solana client initialized');
+    
+    await transactionBridge.initialize();
+    console.log('Transaction bridge initialized');
+  } catch (error) {
+    console.error('Error initializing Solana/Bridge components:', error);
+  }
+})();
+
+// New bridge service endpoints
+
+// Get Solana wallet balance
+app.get('/api/solana/balance/:address', async (req, res) => {
+  try {
+    const { address } = req.params;
+    
+    if (!solanaClient.initialized) {
+      return res.status(503).json({
+        success: false,
+        message: 'Solana client not initialized'
+      });
+    }
+    
+    const balance = await solanaClient.getWalletBalance(address);
+    
+    res.json({
+      success: true,
+      address,
+      balance,
+      currency: 'SOL'
+    });
+  } catch (error) {
+    console.error('Error getting wallet balance:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Initiate a transaction
+app.post('/api/bridge/initiate-transfer', async (req, res) => {
+  try {
+    const { 
+      fromAddress, 
+      toAddress, 
+      amount,
+      sourceCurrency,
+      destinationCurrency,
+      memo
+    } = req.body;
+    
+    if (!transactionBridge.initialized) {
+      return res.status(503).json({
+        success: false,
+        message: 'Transaction bridge not initialized'
+      });
+    }
+    
+    // Validate required fields
+    if (!fromAddress || !toAddress || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters: fromAddress, toAddress, amount'
+      });
+    }
+    
+    // Initialize transaction
+    const result = await transactionBridge.initiateTransaction({
+      fromAddress,
+      toAddress,
+      amount,
+      sourceCurrency: sourceCurrency || 'SOL',
+      destinationCurrency: destinationCurrency || 'SOL',
+      memo: memo || ''
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error initiating transfer:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Get transaction status
+app.get('/api/bridge/transaction-status/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!transactionBridge.initialized) {
+      return res.status(503).json({
+        success: false,
+        message: 'Transaction bridge not initialized'
+      });
+    }
+    
+    const status = await transactionBridge.getTransactionStatus(id);
+    res.json(status);
+  } catch (error) {
+    console.error('Error getting transaction status:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Get wallet transaction history
+app.get('/api/bridge/wallet-transactions/:address', async (req, res) => {
+  try {
+    const { address } = req.params;
+    
+    if (!transactionBridge.initialized) {
+      return res.status(503).json({
+        success: false,
+        message: 'Transaction bridge not initialized'
+      });
+    }
+    
+    const transactions = await transactionBridge.getWalletTransactions(address);
+    res.json({
+      success: true,
+      address,
+      transactions
+    });
+  } catch (error) {
+    console.error('Error getting wallet transactions:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Sync offline transaction
+app.post('/api/bridge/sync-offline-transaction', async (req, res) => {
+  try {
+    const { 
+      offlineTransactionId, 
+      fromAddress, 
+      toAddress, 
+      amount,
+      sourceCurrency,
+      destinationCurrency,
+      bluetoothTxId,
+      signature,
+      timestamp
+    } = req.body;
+    
+    if (!transactionBridge.initialized) {
+      return res.status(503).json({
+        success: false,
+        message: 'Transaction bridge not initialized'
+      });
+    }
+    
+    // Validate required fields
+    if (!offlineTransactionId || !fromAddress || !toAddress || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters'
+      });
+    }
+    
+    // TODO: Implement offline transaction syncing
+    // This would involve:
+    // 1. Verifying the transaction signature
+    // 2. Recording the transaction in Hyperledger
+    // 3. Executing the transaction on Solana
+    
+    res.json({
+      success: true,
+      message: 'Offline transaction sync not fully implemented yet',
+      status: 'PENDING',
+      transaction_id: offlineTransactionId
+    });
+  } catch (error) {
+    console.error('Error syncing offline transaction:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 });

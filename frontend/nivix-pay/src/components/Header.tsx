@@ -67,7 +67,7 @@ const Header: React.FC = () => {
       <List>
         {navItems.map((item) => (
           <ListItem 
-            disableRipple
+            button
             component={Link} 
             to={item.path}
             key={item.label}

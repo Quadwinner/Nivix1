@@ -41,6 +41,19 @@ type ValidationResult struct {
 	Message string `json:"message"`
 }
 
+// TransactionRecord represents a transaction record
+type TransactionRecord struct {
+	TransactionID       string `json:"transactionId"`
+	FromAddress         string `json:"fromAddress"`
+	ToAddress           string `json:"toAddress"`
+	Amount              string `json:"amount"`
+	SourceCurrency      string `json:"sourceCurrency"`
+	DestinationCurrency string `json:"destinationCurrency"`
+	Memo                string `json:"memo"`
+	Timestamp           string `json:"timestamp"`
+	Status              string `json:"status"`
+}
+
 // SmartContract provides functions for managing KYC data
 type SmartContract struct {
 	contractapi.Contract
@@ -342,6 +355,142 @@ func (s *SmartContract) QueryKYCByCountry(ctx contractapi.TransactionContextInte
 	}
 
 	return records, nil
+}
+
+// RecordTransaction records a transaction in the ledger
+func (s *SmartContract) RecordTransaction(ctx contractapi.TransactionContextInterface,
+	transactionID string,
+	fromAddress string,
+	toAddress string,
+	amount string,
+	sourceCurrency string,
+	destinationCurrency string,
+	memo string,
+	timestamp string) error {
+
+	// Create transaction record
+	transactionRecord := TransactionRecord{
+		TransactionID:       transactionID,
+		FromAddress:         fromAddress,
+		ToAddress:           toAddress,
+		Amount:              amount,
+		SourceCurrency:      sourceCurrency,
+		DestinationCurrency: destinationCurrency,
+		Memo:                memo,
+		Timestamp:           timestamp,
+		Status:              "COMPLETED",
+	}
+
+	// Convert to JSON
+	transactionJSON, err := json.Marshal(transactionRecord)
+	if err != nil {
+		return err
+	}
+
+	// Store in the ledger
+	err = ctx.GetStub().PutState("tx_"+transactionID, transactionJSON)
+	if err != nil {
+		return fmt.Errorf("failed to record transaction: %v", err)
+	}
+
+	// Also index by sender and recipient for faster queries
+	// Index for sender
+	fromAddressIndex := "from~tx~" + fromAddress + "~" + transactionID
+	err = ctx.GetStub().PutState(fromAddressIndex, []byte(transactionID))
+	if err != nil {
+		return fmt.Errorf("failed to create from address index: %v", err)
+	}
+
+	// Index for recipient
+	toAddressIndex := "to~tx~" + toAddress + "~" + transactionID
+	err = ctx.GetStub().PutState(toAddressIndex, []byte(transactionID))
+	if err != nil {
+		return fmt.Errorf("failed to create to address index: %v", err)
+	}
+
+	return nil
+}
+
+// GetTransaction gets a transaction by ID
+func (s *SmartContract) GetTransaction(ctx contractapi.TransactionContextInterface,
+	transactionID string) (*TransactionRecord, error) {
+	
+	transactionJSON, err := ctx.GetStub().GetState("tx_" + transactionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read transaction: %v", err)
+	}
+	if transactionJSON == nil {
+		return nil, fmt.Errorf("transaction %s does not exist", transactionID)
+	}
+
+	var transaction TransactionRecord
+	err = json.Unmarshal(transactionJSON, &transaction)
+	if err != nil {
+		return nil, err
+	}
+
+	return &transaction, nil
+}
+
+// GetTransactionsByAddress gets all transactions for an address (either sender or recipient)
+func (s *SmartContract) GetTransactionsByAddress(ctx contractapi.TransactionContextInterface,
+	address string) ([]*TransactionRecord, error) {
+	
+	// Get sender transactions
+	fromResultsIterator, err := ctx.GetStub().GetStateByPartialCompositeKey("from~tx~", []string{address})
+	if err != nil {
+		return nil, err
+	}
+	defer fromResultsIterator.Close()
+
+	// Get recipient transactions
+	toResultsIterator, err := ctx.GetStub().GetStateByPartialCompositeKey("to~tx~", []string{address})
+	if err != nil {
+		return nil, err
+	}
+	defer toResultsIterator.Close()
+
+	// Combine results
+	transactions := []*TransactionRecord{}
+	transactionIDs := make(map[string]bool)
+
+	// Process sender transactions
+	for fromResultsIterator.HasNext() {
+		queryResponse, err := fromResultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		transactionID := string(queryResponse.Value)
+		if _, exists := transactionIDs[transactionID]; !exists {
+			transactionIDs[transactionID] = true
+			
+			transaction, err := s.GetTransaction(ctx, transactionID)
+			if err == nil {
+				transactions = append(transactions, transaction)
+			}
+		}
+	}
+
+	// Process recipient transactions
+	for toResultsIterator.HasNext() {
+		queryResponse, err := toResultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		transactionID := string(queryResponse.Value)
+		if _, exists := transactionIDs[transactionID]; !exists {
+			transactionIDs[transactionID] = true
+			
+			transaction, err := s.GetTransaction(ctx, transactionID)
+			if err == nil {
+				transactions = append(transactions, transaction)
+			}
+		}
+	}
+
+	return transactions, nil
 }
 
 // Main function starts the chaincode
